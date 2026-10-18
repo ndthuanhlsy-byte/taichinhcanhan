@@ -82,9 +82,42 @@
 <body>
   <main>
     <h1>Tài chính cá nhân</h1>
-    <p class="intro">
-      Theo dõi tài sản, thu chi và các khoản vay của anh Thuận.
+    <p class="intro" id="owner-line">
+      Theo dõi tài sản, thu chi và các khoản vay<span id="owner-suffix" hidden> của <strong id="owner-name"></strong></span>.
+      <button type="button" id="owner-edit" hidden>Đổi tên</button>
     </p>
+
+    <form id="owner-form" hidden>
+      <label for="owner-input">Nhập tên của bạn để bắt đầu</label>
+      <input id="owner-input" type="text" maxlength="40" placeholder="Ví dụ: anh Nam" required>
+      <button type="submit">Lưu tên</button>
+      <button type="button" id="owner-cancel" hidden>Hủy</button>
+    </form>
+    <p id="owner-message" role="status"></p>
+
+    <style>
+      [hidden] { display: none !important; }
+      #owner-edit {
+        margin-left: 8px; padding: 4px 10px; font: inherit; font-size: 15px;
+        background: white; color: #164e63; border: 1px solid #164e63;
+        border-radius: 8px; cursor: pointer;
+      }
+      #owner-form {
+        display: grid; gap: 10px; max-width: 420px; margin: 12px 0;
+      }
+      #owner-form input {
+        box-sizing: border-box; width: 100%; padding: 12px;
+        border: 1px solid #a9b6c6; border-radius: 8px; font: inherit;
+      }
+      #owner-form button {
+        padding: 12px; background: #164e63; color: white; border: none;
+        border-radius: 8px; font: inherit; cursor: pointer;
+      }
+      #owner-form #owner-cancel {
+        background: white; color: #164e63; border: 1px solid #164e63;
+      }
+      #owner-message { margin: 0; color: #b42318; }
+    </style>
 
     <div class="notice">
       Bản thực hành — đã có chức năng lưu danh sách tài sản trong trình duyệt.
@@ -4479,6 +4512,67 @@ updateHistoryAccountOptions();document.getElementById("history-type")
     renderTransactions();
   });</script>
 </main>
+<script>
+(function () {
+  const KEY = "taiChinhCaNhan.ownerName.v1";
+  const suffix = document.getElementById("owner-suffix");
+  const nameEl = document.getElementById("owner-name");
+  const editBtn = document.getElementById("owner-edit");
+  const form = document.getElementById("owner-form");
+  const input = document.getElementById("owner-input");
+  const cancelBtn = document.getElementById("owner-cancel");
+  const message = document.getElementById("owner-message");
+
+  function loadName() {
+    try { return (localStorage.getItem(KEY) || "").trim(); }
+    catch (error) { return ""; }
+  }
+
+  function render() {
+    const name = loadName();
+    message.textContent = "";
+    if (name) {
+      nameEl.textContent = name;
+      suffix.hidden = false;
+      editBtn.hidden = false;
+      form.hidden = true;
+    } else {
+      suffix.hidden = true;
+      editBtn.hidden = true;
+      form.hidden = false;
+      cancelBtn.hidden = true;
+    }
+  }
+
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    const name = input.value.trim();
+    if (!name) {
+      message.textContent = "Vui lòng nhập tên.";
+      return;
+    }
+    try {
+      localStorage.setItem(KEY, name);
+    } catch (error) {
+      message.textContent = "Không lưu được tên trên thiết bị này.";
+      return;
+    }
+    input.value = "";
+    render();
+  });
+
+  editBtn.addEventListener("click", function () {
+    input.value = loadName();
+    form.hidden = false;
+    cancelBtn.hidden = false;
+    input.focus();
+  });
+
+  cancelBtn.addEventListener("click", render);
+
+  render();
+})();
+</script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () {
