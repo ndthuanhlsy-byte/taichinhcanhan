@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Tài chính cá nhân</title>
   <meta name="theme-color" content="#164e63">
   <meta name="mobile-web-app-capable" content="yes">
@@ -77,23 +77,140 @@
       }
     }
   </style>
+
+  <style>
+    /* ===== Bố cục gọn cho điện thoại ===== */
+    .tab-off { display: none !important; }
+
+    body { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 20px;
+    }
+
+    h1 { font-size: 24px; margin: 6px 0 4px; }
+    .intro { font-size: 15px; margin-bottom: 8px; }
+    .notice { font-size: 14px; padding: 10px 12px; margin: 12px 0; }
+
+    main > section.card { margin-top: 12px !important; padding: 16px; }
+    .card { overflow-wrap: anywhere; }
+    .card h2 { font-size: 19px; margin-bottom: 10px; }
+    .card p { font-size: 15px; }
+
+    main input, main select, main textarea, main button { font-size: 16px; }
+    main button { min-height: 44px; }
+    main select, main input { max-width: 100%; }
+
+    .grid { gap: 12px; }
+    .grid .card { padding: 14px; cursor: pointer; }
+    .grid .card h2 { font-size: 17px; margin-bottom: 6px; }
+    .grid .card p { font-size: 14px; line-height: 1.45; }
+    @media (max-width: 650px) {
+      .grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .grid .card p { font-size: 13px; }
+    }
+
+    #subnav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      gap: 8px;
+      margin: 8px -14px 0;
+      padding: calc(8px + env(safe-area-inset-top, 0px)) 14px 8px;
+      overflow-x: auto;
+      background: #f3f6fa;
+      scrollbar-width: none;
+    }
+    #subnav::-webkit-scrollbar { display: none; }
+    #subnav button {
+      flex: 0 0 auto;
+      min-height: 38px;
+      padding: 6px 14px;
+      border: 1px solid #c3cedb;
+      border-radius: 999px;
+      background: white;
+      color: #164e63;
+      font: inherit;
+      font-size: 15px;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    #subnav button.active {
+      background: #164e63;
+      border-color: #164e63;
+      color: white;
+    }
+
+    #tabbar {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 20;
+      display: flex;
+      background: white;
+      border-top: 1px solid #dce3ec;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      box-shadow: 0 -2px 8px rgba(22, 78, 99, 0.08);
+    }
+    #tabbar button {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      min-height: 60px;
+      padding: 6px 2px;
+      border: none;
+      border-top: 3px solid transparent;
+      background: white;
+      color: #66768a;
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    #tabbar button .ico { font-size: 22px; line-height: 1; }
+    #tabbar button.active {
+      color: #164e63;
+      border-top-color: #164e63;
+      font-weight: bold;
+    }
+  </style>
+  <style>
+    /* Chỉnh bộ lọc và tiêu đề cho gọn trên điện thoại */
+    .card h2 { line-height: 1.3; }
+    main label { display: block; margin: 12px 0 4px; font-size: 15px; }
+    main select { width: 100%; box-sizing: border-box; }
+    #history-type, #history-account, #history-month {
+      width: 100% !important;
+      box-sizing: border-box;
+      margin: 0 0 4px !important;
+    }
+    #history-show-all, #history-clear-filters {
+      display: block;
+      width: 100%;
+      margin: 8px 0 0 !important;
+    }
+  </style>
 </head>
 
 <body>
   <main>
     <h1>Tài chính cá nhân</h1>
-    <p class="intro" id="owner-line">
+    <p class="intro" id="owner-line" data-tab="home">
       Theo dõi tài sản, thu chi và các khoản vay<span id="owner-suffix" hidden> của <strong id="owner-name"></strong></span>.
       <button type="button" id="owner-edit" hidden>Đổi tên</button>
     </p>
 
-    <form id="owner-form" hidden>
+    <form id="owner-form" hidden data-tab="home">
       <label for="owner-input">Nhập tên của bạn để bắt đầu</label>
       <input id="owner-input" type="text" maxlength="40" placeholder="Ví dụ: anh Nam" required>
       <button type="submit">Lưu tên</button>
       <button type="button" id="owner-cancel" hidden>Hủy</button>
     </form>
-    <p id="owner-message" role="status"></p>
+    <p id="owner-message" role="status" data-tab="home"></p>
 
     <style>
       [hidden] { display: none !important; }
@@ -119,11 +236,11 @@
       #owner-message { margin: 0; color: #b42318; }
     </style>
 
-    <div class="notice">
+    <div class="notice" data-tab="home">
       Bản thực hành — đã có chức năng lưu danh sách tài sản trong trình duyệt.
     </div>
 
-    <div class="grid">
+    <div class="grid" data-tab="home">
       <section class="card">
         <h2>1. Tài sản đầu tư</h2>
         <p>
@@ -156,7 +273,7 @@
         </p>
       </section>
     </div>
-      <section class="card" style="margin-top: 24px;">
+      <section class="card" data-tab="assets" data-sub="Thêm tài sản" style="margin-top: 24px;">
       <h2>Thêm tài sản đầu tư</h2>
 
       <p>
@@ -254,7 +371,7 @@
     </style>
 
     
-       <section class="card" style="margin-top: 24px;">
+       <section class="card" data-tab="money" data-sub="Tài khoản" style="margin-top: 24px;">
   <h2>Tài khoản tiền</h2>
 
   <p>
@@ -328,7 +445,7 @@
     opacity: 0.55;
     cursor: not-allowed;
   }
-</style><section class="card" style="margin-top: 24px;">
+</style><section class="card" data-tab="money" data-sub="Ghi thu chi" style="margin-top: 24px;">
   <h2>Ghi thu, chi</h2>
 
   <div style="margin:18px 0;">
@@ -485,7 +602,7 @@
     opacity: 0.55;
     cursor: not-allowed;
   }
-</style><section class="card" style="margin-top: 24px;">
+</style><section class="card" data-tab="money" data-sub="Chuyển tiền" style="margin-top: 24px;">
   <h2>Chuyển tiền giữa các tài khoản</h2>
 
   <form id="transfer-form">
@@ -562,7 +679,7 @@
     opacity: 0.55;
     cursor: not-allowed;
   }
-</style><section class="card" style="margin-top: 24px;">
+</style><section class="card" data-tab="money" data-sub="Báo cáo" style="margin-top: 24px;">
   <h2>Báo cáo thu chi theo tháng</h2>
 
   <label for="report-month">Chọn tháng báo cáo</label>
@@ -589,7 +706,7 @@
     Báo cáo thu chi sẽ không tính chuyển tiền giữa các tài khoản
     là thu nhập hoặc chi tiêu.
   </p>
-</section><section class="card" style="margin-top:24px;">
+</section><section class="card" data-tab="loans" data-sub="Vay mới" style="margin-top:24px;">
   <h2>Vay phát sinh bù thiếu tiền</h2>
 
   <form id="loan-form">
@@ -692,7 +809,7 @@
     opacity:0.55;
     cursor:not-allowed;
   }
-</style><section class="card" style="margin-top:24px;">
+</style><section class="card" data-tab="loans" data-sub="Trả nợ" style="margin-top:24px;">
   <h2>Trả nợ vay phát sinh</h2>
 
   <form id="repayment-form">
@@ -780,7 +897,7 @@
     opacity:0.55;
     cursor:not-allowed;
   }
-</style><section class="card" style="margin-top:24px;">
+</style><section class="card" data-tab="money" data-sub="Ngân sách" style="margin-top:24px;">
   <h2>Ngân sách chi tiêu tháng</h2>
 
   <form id="budget-form">
@@ -851,7 +968,7 @@
     opacity:0.55;
     cursor:not-allowed;
   }
-</style><section class="card" style="margin-top:24px;">
+</style><section class="card" data-tab="loans" data-sub="Lãi vay" style="margin-top:24px;">
   <h2>Lãi vay phát sinh theo tháng</h2>
 
   <p>
@@ -926,7 +1043,7 @@
     opacity:0.55;
     cursor:not-allowed;
   }
-</style><section class="card" style="margin-top:24px;">
+</style><section class="card" data-tab="assets" data-sub="Trả nợ đầu tư" style="margin-top:24px;">
   <h2>Trả nợ vay đầu tư</h2>
 
   <form id="asset-payment-form">
@@ -4512,6 +4629,128 @@ updateHistoryAccountOptions();document.getElementById("history-type")
     renderTransactions();
   });</script>
 </main>
+<script>
+(function () {
+  const TABS = [
+    { id: "home",   label: "Tổng quan", icon: "🏠" },
+    { id: "assets", label: "Tài sản",   icon: "📈" },
+    { id: "money",  label: "Thu chi",   icon: "💳" },
+    { id: "loans",  label: "Vay",       icon: "🤝" }
+  ];
+  const KEY = "taiChinhCaNhan.ui.v1";
+  const main = document.querySelector("main");
+  const items = Array.prototype.filter.call(main.children, function (el) {
+    return el.dataset && el.dataset.tab;
+  });
+  const title = main.querySelector("h1");
+
+  let state = { tab: "home", sub: {} };
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY) || "null");
+    if (saved && typeof saved === "object") {
+      if (TABS.some(function (t) { return t.id === saved.tab; })) state.tab = saved.tab;
+      if (saved.sub && typeof saved.sub === "object") state.sub = saved.sub;
+    }
+  } catch (error) {}
+
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (error) {}
+  }
+
+  function subsOf(tab) {
+    const names = [];
+    items.forEach(function (el) {
+      if (el.dataset.tab === tab && el.dataset.sub && names.indexOf(el.dataset.sub) < 0) {
+        names.push(el.dataset.sub);
+      }
+    });
+    return names;
+  }
+
+  const subnav = document.createElement("div");
+  subnav.id = "subnav";
+  title.insertAdjacentElement("afterend", subnav);
+
+  const tabbar = document.createElement("nav");
+  tabbar.id = "tabbar";
+  tabbar.setAttribute("aria-label", "Menu chính");
+  TABS.forEach(function (t) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.dataset.tab = t.id;
+    const ico = document.createElement("span");
+    ico.className = "ico";
+    ico.textContent = t.icon;
+    const lab = document.createElement("span");
+    lab.textContent = t.label;
+    b.appendChild(ico);
+    b.appendChild(lab);
+    b.addEventListener("click", function () { go(t.id); });
+    tabbar.appendChild(b);
+  });
+  document.body.appendChild(tabbar);
+
+  function render() {
+    const subs = subsOf(state.tab);
+    let sub = state.sub[state.tab];
+    if (subs.length && subs.indexOf(sub) < 0) sub = subs[0];
+
+    items.forEach(function (el) {
+      const inTab = el.dataset.tab === state.tab;
+      const inSub = !el.dataset.sub || el.dataset.sub === sub;
+      el.classList.toggle("tab-off", !(inTab && inSub));
+    });
+
+    Array.prototype.forEach.call(tabbar.children, function (b) {
+      b.classList.toggle("active", b.dataset.tab === state.tab);
+    });
+
+    subnav.textContent = "";
+    subnav.classList.toggle("tab-off", subs.length < 2);
+    subs.forEach(function (name) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = name;
+      b.classList.toggle("active", name === sub);
+      b.addEventListener("click", function () {
+        state.sub[state.tab] = name;
+        save();
+        render();
+        window.scrollTo(0, 0);
+      });
+      subnav.appendChild(b);
+    });
+  }
+
+  function go(tab, sub) {
+    state.tab = tab;
+    if (sub) state.sub[tab] = sub;
+    save();
+    render();
+    window.scrollTo(0, 0);
+  }
+
+  // Bốn thẻ ở trang Tổng quan bấm được để mở đúng phần
+  const targets = [
+    ["assets", null],
+    ["money", null],
+    ["loans", null],
+    ["money", "Báo cáo"]
+  ];
+  Array.prototype.forEach.call(main.querySelectorAll(".grid > .card"), function (card, i) {
+    if (!targets[i]) return;
+    card.setAttribute("role", "button");
+    card.tabIndex = 0;
+    const open = function () { go(targets[i][0], targets[i][1]); };
+    card.addEventListener("click", open);
+    card.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+    });
+  });
+
+  render();
+})();
+</script>
 <script>
 (function () {
   const KEY = "taiChinhCaNhan.ownerName.v1";
