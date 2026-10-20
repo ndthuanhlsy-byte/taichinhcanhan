@@ -3,12 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>
+(function () {
+  if (window.crypto && !window.crypto.randomUUID && window.crypto.getRandomValues) {
+    window.crypto.randomUUID = function () {
+      const bytes = new Uint8Array(16);
+      window.crypto.getRandomValues(bytes);
+      bytes[6] = (bytes[6] & 0x0f) | 0x40;
+      bytes[8] = (bytes[8] & 0x3f) | 0x80;
+      const hex = Array.prototype.map.call(bytes, function (b) {
+        return b.toString(16).padStart(2, "0");
+      }).join("");
+      return hex.slice(0, 8) + "-" + hex.slice(8, 12) + "-" +
+        hex.slice(12, 16) + "-" + hex.slice(16, 20) + "-" + hex.slice(20);
+    };
+  }
+})();
+</script>
   <title>Tài chính cá nhân</title>
   <meta name="theme-color" content="#164e63">
   <meta name="mobile-web-app-capable" content="yes">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon-192.png" type="image/png">
-  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Tài chính">
+  <meta name="format-detection" content="telephone=no">
 
   <style>
     body {
@@ -285,6 +306,16 @@
         </p>
       </section>
     </div>
+      <div class="notice" id="ios-hint" data-tab="home" hidden>
+        <p>
+          <strong>Dùng iPhone?</strong> Để cài app: trong Safari, bấm nút
+          <strong>Chia sẻ</strong> (ô vuông có mũi tên lên), chọn
+          <strong>Thêm vào MH chính</strong> (Thêm vào Màn hình chính), rồi bấm
+          <strong>Thêm</strong>.
+        </p>
+        <button type="button" id="ios-hint-close" style="padding:8px 14px;font:inherit;background:white;color:#164e63;border:1px solid #164e63;border-radius:8px;">Đã hiểu</button>
+      </div>
+
       <section class="card" id="net-worth-card" data-tab="home">
         <h2>Tài sản ròng hiện tại</h2>
         <div id="net-worth-body"></div>
@@ -2907,6 +2938,30 @@ interestAccruals: interestAccruals,
 
   link.href = url;
   link.download = "TaiChinhCaNhan_ToanBo_" + stamp + ".json";
+
+  const iosDevice =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+  if (iosDevice && navigator.share && navigator.canShare) {
+    const shareFile = new File([blob], link.download, {
+      type: "application/json"
+    });
+
+    if (navigator.canShare({ files: [shareFile] })) {
+      navigator.share({ files: [shareFile], title: link.download })
+        .catch(function () {});
+      URL.revokeObjectURL(url);
+
+      transactionMessage.textContent =
+        "Đã mở bảng chia sẻ cho bản sao lưu: " +
+        assets.length + " tài sản, " +
+        accounts.length + " tài khoản, " +
+        transactions.length + " giao dịch. " +
+        "Anh chọn \"Lưu vào Tệp\" để giữ file.";
+      return;
+    }
+  }
 
   document.body.append(link);
   link.click();
@@ -6118,6 +6173,25 @@ updateHistoryAccountOptions();document.getElementById("history-type")
   cancelBtn.addEventListener("click", render);
 
   render();
+})();
+</script>
+<script>
+(function () {
+  const box = document.getElementById("ios-hint");
+  const close = document.getElementById("ios-hint-close");
+  if (!box || !close) return;
+  const KEY = "taiChinhCaNhan.iosHint.v1";
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const standalone = window.navigator.standalone === true ||
+    (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+  let dismissed = false;
+  try { dismissed = localStorage.getItem(KEY) === "1"; } catch (error) {}
+  if (ios && !standalone && !dismissed) box.hidden = false;
+  close.addEventListener("click", function () {
+    box.hidden = true;
+    try { localStorage.setItem(KEY, "1"); } catch (error) {}
+  });
 })();
 </script>
 <script>
