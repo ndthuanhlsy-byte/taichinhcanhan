@@ -194,6 +194,10 @@
       margin: 8px 0 0 !important;
     }
   </style>
+  <style>
+    #tabbar button { font-size: 11px; padding: 6px 0; white-space: nowrap; }
+    #tabbar button .ico { font-size: 21px; }
+  </style>
 </head>
 
 <body>
@@ -266,13 +270,30 @@
       </section>
 
       <section class="card">
-        <h2>4. Cân đối hằng tháng</h2>
+        <h2>4. Công nợ phải thu</h2>
+        <p>
+          Ghi các khoản cho người khác vay, theo dõi hạn thu,
+          thu hồi gốc và lãi, tự cập nhật tài khoản và báo cáo.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>5. Cân đối và dự báo vốn</h2>
         <p>
           Tổng hợp thu nhập, chi tiêu, lãi vay phát sinh,
-          thiếu hụt tiền và dư nợ cuối tháng.
+          thiếu hụt tiền, rồi dự báo dòng tiền và nhu cầu vốn cả năm.
         </p>
       </section>
     </div>
+      <section class="card" id="net-worth-card" data-tab="home">
+        <h2>Tài sản ròng hiện tại</h2>
+        <div id="net-worth-body"></div>
+      </section>
+
+      <section class="card" id="debt-card" data-tab="home">
+        <h2>Tổng nợ phải trả</h2>
+        <div id="debt-total-body"></div>
+      </section>
       <section class="card" data-tab="assets" data-sub="Thêm tài sản" style="margin-top: 24px;">
       <h2>Thêm tài sản đầu tư</h2>
 
@@ -327,6 +348,16 @@
   id="asset-rate"
   type="number"
   min="0"
+  step="0.01"
+  value="0"
+  required
+>
+        <label for="asset-return">Dự kiến khả năng sinh lời trong năm (%/năm, tính trên giá vốn)</label>
+<input
+  id="asset-return"
+  type="number"
+  min="-100"
+  max="1000"
   step="0.01"
   value="0"
   required
@@ -467,6 +498,8 @@
   <option value="loan_receive">Nhận tiền vay</option>
   <option value="loan_repayment">Trả nợ vay phát sinh</option>
   <option value="asset_repayment">Trả nợ đầu tư</option>
+  <option value="receivable_lend">Cho vay</option>
+  <option value="receivable_collect">Thu hồi nợ</option>
 </select>
     <label for="history-account">Lọc tài khoản</label>
 <select
@@ -679,7 +712,7 @@
     opacity: 0.55;
     cursor: not-allowed;
   }
-</style><section class="card" data-tab="money" data-sub="Báo cáo" style="margin-top: 24px;">
+</style><section class="card" data-tab="balance" data-sub="Cân đối tháng" style="margin-top: 24px;">
   <h2>Báo cáo thu chi theo tháng</h2>
 
   <label for="report-month">Chọn tháng báo cáo</label>
@@ -1131,7 +1164,145 @@
     opacity:0.55;
     cursor:not-allowed;
   }
-</style><script>
+</style><section class="card" data-tab="receivables" data-sub="Tổng hợp">
+  <h2>Công nợ phải thu</h2>
+  <div id="receivable-summary"></div>
+  <div id="receivable-list"></div>
+</section>
+<section class="card" data-tab="receivables" data-sub="Cho vay mới">
+  <h2>Cho vay mới</h2>
+  <form id="receivable-form">
+    <label for="receivable-debtor">Cho ai vay?</label>
+    <input id="receivable-debtor" type="text" maxlength="150" placeholder="Ví dụ: Anh Nam" required>
+    <label for="receivable-date">Ngày cho vay</label>
+    <input id="receivable-date" type="date" required>
+    <label for="receivable-amount">Số tiền cho vay (₫)</label>
+    <input id="receivable-amount" type="number" min="1" step="1" placeholder="Ví dụ: 20000000" required>
+    <label for="receivable-account">Tài khoản chi tiền cho vay</label>
+    <select id="receivable-account" required></select>
+    <label for="receivable-rate">Lãi suất cho vay (%/năm) — để 0 nếu không tính lãi</label>
+    <input id="receivable-rate" type="number" min="0" step="0.01" value="0" required>
+    <label for="receivable-due">Ngày hẹn thu hồi — nếu đã xác định</label>
+    <input id="receivable-due" type="date">
+    <label for="receivable-note">Ghi chú</label>
+    <input id="receivable-note" type="text" maxlength="300" placeholder="Ví dụ: Cho mượn đáo hạn ngân hàng">
+    <button type="submit">Lưu khoản cho vay</button>
+  </form>
+  <p id="receivable-form-note" class="rcv-hint">
+    Cho vay làm giảm tiền trong tài khoản nhưng không tính là chi tiêu.
+    Khoản này trở thành công nợ phải thu và được tính vào tài sản ròng.
+  </p>
+</section>
+<section class="card" data-tab="receivables" data-sub="Thu hồi nợ">
+  <h2>Thu hồi nợ</h2>
+  <form id="collect-form">
+    <label for="collect-receivable">Khoản phải thu</label>
+    <select id="collect-receivable" required></select>
+    <label for="collect-date">Ngày thu tiền</label>
+    <input id="collect-date" type="date" required>
+    <label for="collect-account">Tài khoản nhận tiền</label>
+    <select id="collect-account" required></select>
+    <label for="collect-principal">Tiền gốc thu (₫)</label>
+    <input id="collect-principal" type="number" min="0" step="1" value="0" required>
+    <label for="collect-interest">Tiền lãi thu (₫)</label>
+    <input id="collect-interest" type="number" min="0" step="1" value="0" required>
+    <label for="collect-note">Ghi chú</label>
+    <input id="collect-note" type="text" maxlength="300">
+    <button type="submit">Lưu thu hồi nợ</button>
+  </form>
+  <p class="rcv-hint">
+    Tiền gốc làm giảm công nợ phải thu. Tiền lãi tính là thu nhập.
+    Tổng tiền thu được cộng vào tài khoản nhận.
+  </p>
+</section>
+<style>
+  #receivable-form, #collect-form { display: grid; gap: 10px; }
+  #receivable-form input, #receivable-form select,
+  #collect-form input, #collect-form select {
+    box-sizing: border-box; width: 100%; padding: 12px;
+    margin-bottom: 6px; border: 1px solid #a9b6c6; border-radius: 8px;
+    background: white; color: #203047; font: inherit;
+  }
+  #receivable-form button, #collect-form button {
+    padding: 14px; background: #164e63; color: white; border: none;
+    border-radius: 8px; font: inherit; cursor: pointer;
+  }
+  #receivable-form button:disabled, #collect-form button:disabled {
+    opacity: 0.55; cursor: not-allowed;
+  }
+  .rcv-hint { color: #526176; font-size: 14px; }
+  .rcv-box { padding: 14px; margin: 12px 0; background: #e8f3f6; border-radius: 10px; }
+  .rcv-card { padding: 14px; margin: 12px 0; border: 1px solid #dce3ec; border-radius: 10px; }
+  .rcv-card p, .rcv-box p { margin: 4px 0; }
+  .rcv-late { color: #b42318; font-weight: bold; }
+  .rcv-ok { color: #067647; font-weight: bold; }
+  .grid .card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+</style>
+<section class="card" data-tab="balance" data-sub="Dự báo vốn năm">
+  <h2>Dòng tiền và nhu cầu vốn trong năm</h2>
+  <label for="forecast-year">Năm dự báo</label>
+  <input id="forecast-year" type="number" min="2000" max="2100" step="1">
+  <div id="forecast-body"></div>
+</section>
+<section class="card" data-tab="balance" data-sub="Kế hoạch thu chi">
+  <h2>Kế hoạch thu chi trong năm</h2>
+  <p class="rcv-hint">
+    Nhập các khoản thu nhập dự kiến (lương, kinh doanh...) và các khoản chi lớn
+    (mua sắm, sửa nhà, trả gốc ngân hàng...). Các khoản này được đưa vào
+    mục Dự báo vốn năm.
+  </p>
+  <form id="plan-form">
+    <label for="plan-kind">Loại</label>
+    <select id="plan-kind">
+      <option value="in">Thu nhập dự kiến</option>
+      <option value="out">Chi lớn dự kiến</option>
+    </select>
+    <label for="plan-name">Nội dung</label>
+    <input id="plan-name" type="text" maxlength="150" placeholder="Ví dụ: Lương hằng tháng" required>
+    <label for="plan-month">Tháng phát sinh</label>
+    <input id="plan-month" type="month" required>
+    <label for="plan-amount">Số tiền (₫)</label>
+    <input id="plan-amount" type="number" min="1" step="1" required>
+    <label for="plan-until">Lặp lại hằng tháng đến hết tháng — để trống nếu chỉ một lần</label>
+    <input id="plan-until" type="month">
+    <button type="submit">Lưu kế hoạch</button>
+  </form>
+  <h3>Các khoản đã lên kế hoạch</h3>
+  <label for="plan-year">Xem năm</label>
+  <input id="plan-year" type="number" min="2000" max="2100" step="1">
+  <div id="plan-list"></div>
+</section>
+<style>
+  #plan-form { display: grid; gap: 10px; }
+  #plan-form input, #plan-form select, #forecast-year, #plan-year {
+    box-sizing: border-box; width: 100%; padding: 12px;
+    margin-bottom: 6px; border: 1px solid #a9b6c6; border-radius: 8px;
+    background: white; color: #203047; font: inherit;
+  }
+  #plan-form button[type=submit] {
+    padding: 14px; background: #164e63; color: white; border: none;
+    border-radius: 8px; font: inherit; cursor: pointer;
+  }
+  .fc-scroll { overflow-x: auto; margin: 10px 0; }
+  .fc-table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  .fc-table th, .fc-table td {
+    padding: 6px 8px; border-bottom: 1px solid #dce3ec;
+    text-align: right; white-space: nowrap;
+  }
+  .fc-table th:first-child, .fc-table td:first-child { text-align: left; }
+  .fc-table thead th { background: #eef2f7; }
+  .fc-table tr.fc-short td { background: #fdecea; }
+  .fc-table tr.fc-total td { font-weight: bold; background: #eef2f7; }
+  .fc-good { color: #067647; font-weight: bold; }
+  .fc-bad { color: #b42318; font-weight: bold; }
+  .plan-row { padding: 10px 0; border-bottom: 1px solid #dce3ec; }
+  .plan-row button {
+    margin: 6px 8px 0 0; padding: 8px 12px; font: inherit; font-size: 14px;
+    background: white; color: #b42318; border: 1px solid #b42318;
+    border-radius: 8px; cursor: pointer;
+  }
+</style>
+<script>
   const assetForm = document.getElementById("asset-form");
   const assetResult = document.getElementById("asset-result");
   const storageKey = "taiChinhCaNhan.assets.v1";
@@ -1338,8 +1509,17 @@ const importedAssetIds = new Set();
     throw new Error("Lãi suất trong file không hợp lệ.");
   }
 
+  const expectedReturn =
+    item.expectedReturn === undefined ? 0 : item.expectedReturn;
+  if (
+    typeof expectedReturn !== "number" ||
+    !Number.isFinite(expectedReturn) ||
+    expectedReturn < -100 ||
+    expectedReturn > 1000
+  ) {
+    throw new Error("Tỷ lệ sinh lời trong file không hợp lệ.");
+  }
   let assetId = item.id;
-
 if (assetId === undefined) {
   do {
     assetId = crypto.randomUUID();
@@ -1361,7 +1541,8 @@ importedAssetIds.add(assetId);return {
     value: item.value,
     valuationDate: validDate ? date : "",
     debt: debt,
-    rate: rate
+    rate: rate,
+    expectedReturn: expectedReturn
   };
 });
 
@@ -1461,8 +1642,10 @@ if (storageReady) {
   let totalValue = 0;
   let totalDebt = 0;
   let totalInterest = 0;
+  let totalReturn = 0;
 
   assets.forEach(function (asset) {
+    totalReturn += asset.cost * (asset.expectedReturn ?? 0) / 100;
     totalCost += asset.cost;
     totalValue += asset.value;
     totalDebt += getAssetRemainingDebt(asset);
@@ -1482,7 +1665,8 @@ if (storageReady) {
     ["Lãi/lỗ tạm tính", totalValue - totalCost],
     ["Tổng dư nợ gắn với tài sản", totalDebt],
     ["Giá thị trường trừ dư nợ", totalValue - totalDebt],
-    ["Lãi vay ước tính/tháng", totalInterest]
+    ["Lãi vay ước tính/tháng", totalInterest],
+    ["Tiền sinh lời dự kiến/năm (trên giá vốn, kết chuyển sang tab Cân đối)", Math.round(totalReturn)]
   ];
 
   lines.forEach(function (entry) {
@@ -1534,6 +1718,14 @@ details.textContent +=
 const interestLine = document.createElement("p");
 interestLine.textContent =
   "Lãi vay ước tính/tháng: " + money.format(monthlyInterest);
+
+const returnLine = document.createElement("p");
+const expectedPct = asset.expectedReturn ?? 0;
+returnLine.textContent =
+  "Dự kiến sinh lời: " +
+  new Intl.NumberFormat("vi-VN").format(expectedPct) +
+  "%/năm (trên giá vốn) = " +
+  money.format(Math.round(asset.cost * expectedPct / 100)) + "/năm";
       const result = document.createElement("p");
 
       const label = profit > 0
@@ -1560,6 +1752,7 @@ editButton.addEventListener("click", function () {
   document.getElementById("asset-value").value = asset.value;
   document.getElementById("asset-debt").value = asset.debt ?? 0;
 document.getElementById("asset-rate").value = asset.rate ?? 0;
+document.getElementById("asset-return").value = asset.expectedReturn ?? 0;
 document.getElementById("asset-date").value =
   asset.valuationDate || "";
   assetForm.querySelector("button").textContent = "Lưu thay đổi";
@@ -1639,6 +1832,7 @@ row.append(
   details,
   result,
   interestLine,
+  returnLine,
   editButton,
   deleteButton
 );
@@ -1661,15 +1855,20 @@ row.append(
     const valuationDate = document.getElementById("asset-date").value;
 const debt = Number(document.getElementById("asset-debt").value);
 const rate = Number(document.getElementById("asset-rate").value);
+const expectedReturn = Number(document.getElementById("asset-return").value);
 
 if (
   !Number.isSafeInteger(debt) ||
   debt < 0 ||
   !Number.isFinite(rate) ||
-  rate < 0
+  rate < 0 ||
+  !Number.isFinite(expectedReturn) ||
+  expectedReturn < -100 ||
+  expectedReturn > 1000
 ) {
   assetResult.textContent =
-    "Dư nợ phải là số tiền nguyên không âm; lãi suất không được âm.";
+    "Dư nợ phải là số tiền nguyên không âm; lãi suất không được âm; " +
+    "tỷ lệ sinh lời dự kiến phải từ -100% đến 1000%.";
   return;
 }
 if (!valuationDate) {
@@ -1731,7 +1930,8 @@ if (isEditing) {
     value,
     valuationDate,
     debt,
-    rate
+    rate,
+    expectedReturn
   };
 } else {
   nextAssets.push({
@@ -1741,7 +1941,8 @@ if (isEditing) {
     value,
     valuationDate,
     debt,
-    rate
+    rate,
+    expectedReturn
   });
 }
 
@@ -2217,7 +2418,8 @@ try {
   typeof item.accountId === "string" &&
   validTransactionDate(item.date) &&[
   "income", "expense", "transfer",
-  "loan_receive", "loan_repayment", "asset_repayment"
+  "loan_receive", "loan_repayment", "asset_repayment",
+  "receivable_lend", "receivable_collect"
 ]
   
   .includes(item.type) &&
@@ -2292,9 +2494,14 @@ if (!accountStorageReady) {
 
 if (item.accountId !== account.id) return;
 
-if (item.type === "income" || item.type === "loan_receive") {
+if (
+  item.type === "income" ||
+  item.type === "loan_receive" ||
+  item.type === "receivable_collect"
+) {
   balance += item.amount;
 } else if (
+  item.type === "receivable_lend" ||
   item.type === "expense" ||
   item.type === "loan_repayment" ||
   item.type === "asset_repayment"
@@ -2380,7 +2587,11 @@ if (sorted.length === 0) {
   return entry.id === item.toAccountId;
 });
 
-const typeLabel = item.type === "asset_repayment"
+const typeLabel = item.type === "receivable_lend"
+  ? "Cho vay"
+  : item.type === "receivable_collect"
+  ? "Thu hồi nợ"
+  : item.type === "asset_repayment"
   ? "Trả nợ đầu tư"
   : item.type === "loan_repayment"
   ? "Trả nợ vay"
@@ -2435,15 +2646,18 @@ if (item.type === "income" || item.type === "expense") {
   row.append(editTransactionButton);
 }if (
   item.type === "loan_repayment" ||
-  item.type === "asset_repayment"
+  item.type === "asset_repayment" ||
+  item.type === "receivable_collect"
 ) {
   const paymentDetails = document.createElement("span");
   paymentDetails.style.cssText =
     "display:block;margin-top:8px;font-weight:bold;";
 
   paymentDetails.textContent =
-    "Gốc trả: " + money.format(item.principal) +
-    " | Lãi trả: " + money.format(item.interest);
+    (item.type === "receivable_collect" ? "Gốc thu: " : "Gốc trả: ") +
+    money.format(item.principal) +
+    (item.type === "receivable_collect" ? " | Lãi thu: " : " | Lãi trả: ") +
+    money.format(item.interest);
 
   if (item.type === "asset_repayment") {
     const linkedAsset = assets.find(function (asset) {
@@ -2466,7 +2680,20 @@ deleteTransactionButton.style.cssText =
   "border:1px solid #b42318;border-radius:8px;cursor:pointer;";
 
 deleteTransactionButton.addEventListener("click", function () {
-  if (!transactionReady) return;if (item.type === "loan_receive") {
+  if (!transactionReady) return;if (
+  item.type === "receivable_lend" &&
+  transactions.some(function (entry) {
+    return entry.type === "receivable_collect" &&
+      entry.receivableId === item.id;
+  })
+) {
+  transactionMessage.textContent =
+    "Không thể xóa khoản cho vay đã có giao dịch thu hồi. " +
+    "Nếu nhập nhầm, anh cần xóa các giao dịch thu hồi liên quan trước.";
+
+  window.alert(transactionMessage.textContent);
+  return;
+}if (item.type === "loan_receive") {
   const hasRepayments = transactions.some(function (entry) {
     return entry.type === "loan_repayment" &&
       entry.loanId === item.id;
@@ -2487,7 +2714,10 @@ deleteTransactionButton.addEventListener("click", function () {
     "Xóa giao dịch " +
     (item.type === "transfer"
   ? "chuyển tiền "
-  : item.type === "income" ? "thu " : "chi ") +
+  : item.type === "income" ? "thu "
+  : item.type === "receivable_lend" ? "cho vay "
+  : item.type === "receivable_collect" ? "thu hồi nợ "
+  : "chi ") +
     money.format(item.amount) +
     " — " + item.category + "?\n\n" +
     "Số dư tài khoản sẽ được tính lại."
@@ -2637,7 +2867,8 @@ fullBackupButton.addEventListener("click", function () {
   !accountStorageReady ||
   !transactionReady ||
   !budgetReady ||
-  !interestReady
+  !interestReady ||
+  (window.financePlan && !window.financePlan.ready)
 ) {
     transactionMessage.textContent =
       "Chưa thể sao lưu vì có dữ liệu không đọc được.";
@@ -2652,7 +2883,8 @@ fullBackupButton.addEventListener("click", function () {
   accounts: accounts,
   transactions: transactions,
   budgets: budgets,
-interestAccruals: interestAccruals
+interestAccruals: interestAccruals,
+  plan: window.financePlan ? window.financePlan.get() : []
 };
 
   const blob = new Blob(
@@ -2771,7 +3003,11 @@ if (asset.id !== undefined) {
         isMoney(asset.debt ?? 0) &&
         typeof (asset.rate ?? 0) === "number" &&
         Number.isFinite(asset.rate ?? 0) &&
-        (asset.rate ?? 0) >= 0,
+        (asset.rate ?? 0) >= 0 &&
+        typeof (asset.expectedReturn ?? 0) === "number" &&
+        Number.isFinite(asset.expectedReturn ?? 0) &&
+        (asset.expectedReturn ?? 0) >= -100 &&
+        (asset.expectedReturn ?? 0) <= 1000,
         "Thông tin tài sản không hợp lệ."
       );
 
@@ -2861,6 +3097,33 @@ if (hasInterestBackup) {
     interestMonths.add(item.month);
   });
 }
+const hasPlanBackup =
+  Object.prototype.hasOwnProperty.call(backup, "plan");
+
+if (hasPlanBackup) {
+  check(
+    Array.isArray(backup.plan),
+    "Danh sách kế hoạch thu chi trong file không hợp lệ."
+  );
+
+  const planIds = new Set();
+
+  backup.plan.forEach(function (item) {
+    check(
+      item &&
+      isText(item.id, 200) &&
+      !planIds.has(item.id) &&
+      validBudgetMonth(item.month) &&
+      (item.kind === "in" || item.kind === "out") &&
+      isText(item.name, 150) &&
+      isMoney(item.amount) &&
+      item.amount > 0,
+      "Kế hoạch thu chi trong file không hợp lệ hoặc bị trùng mã."
+    );
+
+    planIds.add(item.id);
+  });
+}
     const transactionIds = new Set();
 
     backup.transactions.forEach(function (item) {
@@ -2871,7 +3134,8 @@ if (hasInterestBackup) {
         validTransactionDate(item.date) &&
         [
   "income", "expense", "transfer",
-  "loan_receive", "loan_repayment", "asset_repayment"
+  "loan_receive", "loan_repayment", "asset_repayment",
+  "receivable_lend", "receivable_collect"
 ]
   .includes(item.type) &&
         isMoney(item.amount) &&
@@ -2977,6 +3241,53 @@ if (hasInterestBackup) {
     totalPaid <= (matches[0].debt ?? 0),
     "Tổng gốc trả vượt dư nợ làm mốc của tài sản."
   );
+}if (item.type === "receivable_lend") {
+  check(
+    isText(item.debtor, 150) &&
+    typeof item.receivableRate === "number" &&
+    Number.isFinite(item.receivableRate) &&
+    item.receivableRate >= 0 &&
+    (
+      item.receivableDue === "" ||
+      (
+        validTransactionDate(item.receivableDue) &&
+        item.receivableDue >= item.date
+      )
+    ),
+    "Thông tin người vay, lãi suất hoặc hạn thu không hợp lệ."
+  );
+}if (item.type === "receivable_collect") {
+  const originalLend = backup.transactions.find(function (entry) {
+    return entry &&
+      entry.id === item.receivableId &&
+      entry.type === "receivable_lend";
+  });
+
+  check(
+    originalLend &&
+    item.date >= originalLend.date &&
+    isMoney(item.principal) &&
+    isMoney(item.interest) &&
+    Number.isSafeInteger(item.principal + item.interest) &&
+    item.amount === item.principal + item.interest,
+    "Giao dịch thu hồi nợ không hợp lệ hoặc thiếu khoản cho vay gốc."
+  );
+
+  const totalCollected = backup.transactions
+    .filter(function (entry) {
+      return entry &&
+        entry.type === "receivable_collect" &&
+        entry.receivableId === item.receivableId;
+    })
+    .reduce(function (sum, entry) {
+      return sum + entry.principal;
+    }, 0);
+
+  check(
+    Number.isSafeInteger(totalCollected) &&
+    totalCollected <= originalLend.amount,
+    "Tổng gốc thu hồi vượt số tiền cho vay."
+  );
 }transactionIds.add(item.id);
     });
 
@@ -3021,6 +3332,12 @@ if (hasInterestBackup) {
   updates.push([
     interestKey,
     JSON.stringify(backup.interestAccruals)
+  ]);
+}
+if (hasPlanBackup) {
+  updates.push([
+    "taiChinhCaNhan.plan.v1",
+    JSON.stringify(backup.plan)
   ]);
 }
 
@@ -3225,6 +3542,9 @@ transferForm.reset();
   let loanReceived = 0;
   let principalPaid = 0;
 let interestPaid = 0;
+  let lentOut = 0;
+  let principalCollected = 0;
+  let interestCollected = 0;
   let transactionCount = 0;
 
   transactions.forEach(function (item) {
@@ -3246,22 +3566,32 @@ let interestPaid = 0;
 ) {
   principalPaid += item.principal;
   interestPaid += item.interest;
+} else if (item.type === "receivable_lend") {
+  lentOut += item.amount;
+} else if (item.type === "receivable_collect") {
+  principalCollected += item.principal;
+  interestCollected += item.interest;
 }
   });
 document.dispatchEvent(
   new Event("finance-monthly-report-updated")
 );
+  const incomeTotal = income + interestCollected;
   const lines = [
-  ["Tổng thu nhập", income],
+  ["Tổng thu nhập", incomeTotal],
+  ["Trong đó: lãi thu từ công nợ phải thu", interestCollected],
   ["Chi tiêu sinh hoạt", expense],
-  ["Chênh lệch thu chi trước lãi vay", income - expense],
+  ["Chênh lệch thu chi trước lãi vay", incomeTotal - expense],
   ["Lãi vay phát sinh đã thanh toán", interestPaid],
   ["Thu trừ chi sinh hoạt và lãi đã trả",
-    income - expense - interestPaid],
+    incomeTotal - expense - interestPaid],
   ["Gốc vay đã thanh toán", principalPaid],
-["Tiền vay mới nhận trong tháng", loanReceived],
-["Biến động tiền trong tháng",
-  income - expense + loanReceived - principalPaid - interestPaid]
+  ["Tiền vay mới nhận trong tháng", loanReceived],
+  ["Tiền cho vay trong tháng", lentOut],
+  ["Gốc công nợ phải thu đã thu hồi", principalCollected],
+  ["Biến động tiền trong tháng",
+    incomeTotal - expense + loanReceived - principalPaid -
+    interestPaid - lentOut + principalCollected]
 ];
 
   lines.forEach(function (entry) {
@@ -3346,6 +3676,10 @@ const loanButton = loanForm.querySelector("button");
 loanButton.textContent = "Lưu khoản vay";
 loanButton.disabled =
   !transactionReady || !accountStorageReady || accounts.length === 0;
+document.addEventListener("finance-assets-or-accounts-updated", function () {
+  loanButton.disabled =
+    !transactionReady || !accountStorageReady || accounts.length === 0;
+});
 
 const loanNote =
   loanForm.parentElement.querySelector("p:last-child");
@@ -3407,47 +3741,7 @@ loanForm.addEventListener("submit", function (event) {
     return;
   }
 
-  const loanIds = new Set(loans.map(function (loan) {
-  return loan.id;
-}));
-
-let totalBorrowed = 0;
-let totalPrincipalPaid = 0;
-let totalInterestPaid = 0;
-
-loans.forEach(function (loan) {
-  totalBorrowed += loan.amount;
-});
-
-transactions.forEach(function (item) {
-  if (
-    item.type === "loan_repayment" &&
-    loanIds.has(item.loanId)
-  ) {
-    totalPrincipalPaid += item.principal;
-    totalInterestPaid += item.interest;
-  }
-});
-
-const loanSummary = document.createElement("div");
-loanSummary.style.cssText =
-  "padding:18px;margin:16px 0;background:#e8f3f6;" +
-  "border-radius:10px;";
-
-const summaryLines = [
-  ["Tổng gốc vay đã nhận", totalBorrowed],
-  ["Tổng gốc đã trả", totalPrincipalPaid],
-  ["Tổng dư nợ gốc còn lại", totalBorrowed - totalPrincipalPaid],
-  ["Tổng lãi đã trả", totalInterestPaid]
-];
-
-summaryLines.forEach(function (entry) {
-  const line = document.createElement("p");
-  line.textContent = entry[0] + ": " + money.format(entry[1]);
-  loanSummary.append(line);
-});
-
-container.append(loanSummary);const purposeLabels = {
+  const purposeLabels = {
     principal: "Trả gốc ngân hàng",
     interest: "Trả lãi ngân hàng",
     both: "Trả cả gốc và lãi ngân hàng",
@@ -3522,6 +3816,48 @@ container.append(loanSummary);const purposeLabels = {
     container.append(empty);
     return;
   }
+
+const loanIds = new Set(loans.map(function (loan) {
+  return loan.id;
+}));
+
+let totalBorrowed = 0;
+let totalPrincipalPaid = 0;
+let totalInterestPaid = 0;
+
+loans.forEach(function (loan) {
+  totalBorrowed += loan.amount;
+});
+
+transactions.forEach(function (item) {
+  if (
+    item.type === "loan_repayment" &&
+    loanIds.has(item.loanId)
+  ) {
+    totalPrincipalPaid += item.principal;
+    totalInterestPaid += item.interest;
+  }
+});
+
+const loanSummary = document.createElement("div");
+loanSummary.style.cssText =
+  "padding:18px;margin:16px 0;background:#e8f3f6;" +
+  "border-radius:10px;";
+
+const summaryLines = [
+  ["Tổng gốc vay đã nhận", totalBorrowed],
+  ["Tổng gốc đã trả", totalPrincipalPaid],
+  ["Tổng dư nợ gốc còn lại", totalBorrowed - totalPrincipalPaid],
+  ["Tổng lãi đã trả", totalInterestPaid]
+];
+
+summaryLines.forEach(function (entry) {
+  const line = document.createElement("p");
+  line.textContent = entry[0] + ": " + money.format(entry[1]);
+  loanSummary.append(line);
+});
+
+container.append(loanSummary);
 
   const purposeLabels = {
     principal: "Trả gốc ngân hàng",
@@ -4311,9 +4647,10 @@ renderInterestAccruals();function renderMonthlyInterestResult() {
       income += item.amount;
     } else if (item.type === "expense") {
       expense += item.amount;
+    } else if (item.type === "receivable_collect") {
+      income += item.interest;
     }
   });
-
   const result = income - expense - accrual.amount;
 
   const title = document.createElement("h3");
@@ -4631,11 +4968,979 @@ updateHistoryAccountOptions();document.getElementById("history-type")
 </main>
 <script>
 (function () {
+  const LEND = "receivable_lend";
+  const COLLECT = "receivable_collect";
+
+  function todayText() {
+    const now = new Date();
+    return now.getFullYear() + "-" +
+      String(now.getMonth() + 1).padStart(2, "0") + "-" +
+      String(now.getDate()).padStart(2, "0");
+  }
+  function dmy(text) { return text.split("-").reverse().join("/"); }
+  function daysBetween(from, to) {
+    return Math.round(
+      (Date.parse(to + "T00:00:00Z") - Date.parse(from + "T00:00:00Z")) / 86400000
+    );
+  }
+  function dataReady() {
+    return transactionReady && accountStorageReady;
+  }
+
+  function lends() {
+    return transactions.filter(function (item) { return item.type === LEND; });
+  }
+  function collectedOf(id) {
+    let principal = 0;
+    let interest = 0;
+    transactions.forEach(function (item) {
+      if (item.type === COLLECT && item.receivableId === id) {
+        principal += item.principal;
+        interest += item.interest;
+      }
+    });
+    return { principal: principal, interest: interest };
+  }
+
+  function accountBalances() {
+    return accounts.map(function (account) {
+      let balance = account.openingBalance;
+      transactions.forEach(function (item) {
+        if (item.type === "transfer") {
+          if (item.accountId === account.id) balance -= item.amount;
+          if (item.toAccountId === account.id) balance += item.amount;
+          return;
+        }
+        if (item.accountId !== account.id) return;
+        if (item.type === "income" || item.type === "loan_receive" || item.type === COLLECT) {
+          balance += item.amount;
+        } else if (
+          item.type === "expense" || item.type === "loan_repayment" ||
+          item.type === "asset_repayment" || item.type === LEND
+        ) {
+          balance -= item.amount;
+        }
+      });
+      return { account: account, balance: balance };
+    });
+  }
+
+  function fillSelect(select, options, placeholder) {
+    const previous = select.value;
+    select.replaceChildren();
+    const first = document.createElement("option");
+    first.value = "";
+    first.textContent = placeholder;
+    select.append(first);
+    options.forEach(function (entry) {
+      const option = document.createElement("option");
+      option.value = entry.value;
+      option.textContent = entry.label;
+      select.append(option);
+    });
+    select.disabled = options.length === 0;
+    select.value = options.some(function (entry) { return entry.value === previous; })
+      ? previous : "";
+  }
+
+  const lendForm = document.getElementById("receivable-form");
+  const collectForm = document.getElementById("collect-form");
+  const lendMessage = document.createElement("p");
+  lendMessage.setAttribute("role", "status");
+  lendForm.after(lendMessage);
+  const collectMessage = document.createElement("p");
+  collectMessage.setAttribute("role", "status");
+  collectForm.after(collectMessage);
+
+  function refreshOptions() {
+    const accountOptions = accountStorageReady
+      ? accounts.map(function (a) { return { value: a.id, label: a.name }; })
+      : [];
+    fillSelect(
+      document.getElementById("receivable-account"), accountOptions,
+      accountOptions.length ? "Chọn tài khoản chi tiền" : "Cần có tài khoản hợp lệ"
+    );
+    fillSelect(
+      document.getElementById("collect-account"), accountOptions,
+      accountOptions.length ? "Chọn tài khoản nhận tiền" : "Cần có tài khoản hợp lệ"
+    );
+    const open = transactionReady ? lends().filter(function (item) {
+      return item.amount - collectedOf(item.id).principal > 0;
+    }) : [];
+    fillSelect(
+      document.getElementById("collect-receivable"),
+      open.map(function (item) {
+        return {
+          value: item.id,
+          label: item.debtor + " — còn " +
+            money.format(item.amount - collectedOf(item.id).principal) +
+            " — " + dmy(item.date)
+        };
+      }),
+      open.length ? "Chọn khoản phải thu" : "Chưa có khoản phải thu còn nợ"
+    );
+    const disabled = !dataReady() || accounts.length === 0;
+    lendForm.querySelector("button").disabled = disabled;
+    collectForm.querySelector("button").disabled = disabled || open.length === 0;
+  }
+
+  function addLine(parent, text, className) {
+    const line = document.createElement("p");
+    line.textContent = text;
+    if (className) line.className = className;
+    parent.append(line);
+    return line;
+  }
+
+  function renderReceivables() {
+    const summary = document.getElementById("receivable-summary");
+    const list = document.getElementById("receivable-list");
+    summary.replaceChildren();
+    list.replaceChildren();
+    refreshOptions();
+
+    if (!dataReady()) {
+      summary.textContent = "Chưa thể hiển thị công nợ do lỗi đọc dữ liệu.";
+      return;
+    }
+
+    const all = lends();
+    const today = todayText();
+    let totalLent = 0, totalPrincipal = 0, totalInterest = 0;
+    let overdueCount = 0, overdueAmount = 0;
+    all.forEach(function (item) {
+      const got = collectedOf(item.id);
+      totalLent += item.amount;
+      totalPrincipal += got.principal;
+      totalInterest += got.interest;
+      const remaining = item.amount - got.principal;
+      if (remaining > 0 && item.receivableDue && item.receivableDue < today) {
+        overdueCount++;
+        overdueAmount += remaining;
+      }
+    });
+
+    const box = document.createElement("div");
+    box.className = "rcv-box";
+    addLine(box, "Tổng đã cho vay: " + money.format(totalLent));
+    addLine(box, "Gốc đã thu hồi: " + money.format(totalPrincipal));
+    const rest = addLine(box, "Công nợ phải thu còn lại: " + money.format(totalLent - totalPrincipal));
+    rest.style.fontWeight = "bold";
+    addLine(box, "Lãi đã thu: " + money.format(totalInterest));
+    if (overdueCount > 0) {
+      addLine(
+        box,
+        "Quá hạn: " + overdueCount + " khoản, " + money.format(overdueAmount),
+        "rcv-late"
+      );
+    }
+    summary.append(box);
+
+    if (all.length === 0) {
+      const empty = document.createElement("p");
+      empty.textContent = "Chưa có khoản cho vay nào.";
+      list.append(empty);
+      return;
+    }
+
+    all.slice().sort(function (a, b) { return b.date.localeCompare(a.date); })
+      .forEach(function (item) {
+        const got = collectedOf(item.id);
+        const remaining = item.amount - got.principal;
+        const account = accounts.find(function (a) { return a.id === item.accountId; });
+        const card = document.createElement("div");
+        card.className = "rcv-card";
+        const name = document.createElement("strong");
+        name.textContent = "Cho vay: " + item.debtor;
+        card.append(name);
+        addLine(card, "Ngày cho vay: " + dmy(item.date));
+        addLine(card, "Gốc cho vay: " + money.format(item.amount));
+        addLine(card, "Gốc đã thu: " + money.format(got.principal));
+        addLine(card, "Còn phải thu: " + money.format(remaining)).style.fontWeight = "bold";
+        addLine(card, "Lãi đã thu: " + money.format(got.interest));
+        addLine(card, "Lãi suất: " +
+          new Intl.NumberFormat("vi-VN").format(item.receivableRate) + "%/năm");
+        addLine(card, "Tài khoản đã chi: " + (account ? account.name : "Không tìm thấy tài khoản"));
+        if (remaining <= 0) {
+          addLine(card, "Tình trạng: Đã thu đủ gốc", "rcv-ok");
+        } else if (!item.receivableDue) {
+          addLine(card, "Hạn thu: Chưa xác định");
+        } else {
+          const days = daysBetween(today, item.receivableDue);
+          if (days < 0) {
+            addLine(card, "Hạn thu: " + dmy(item.receivableDue) + " — quá hạn " + (-days) + " ngày", "rcv-late");
+          } else if (days === 0) {
+            addLine(card, "Hạn thu: hôm nay (" + dmy(item.receivableDue) + ")", "rcv-late");
+          } else {
+            addLine(card, "Hạn thu: " + dmy(item.receivableDue) + " — còn " + days + " ngày");
+          }
+        }
+        if (item.note) addLine(card, "Ghi chú: " + item.note);
+        list.append(card);
+      });
+  }
+
+  function saveTransactions(next) {
+    try {
+      localStorage.setItem(transactionKey, JSON.stringify(next));
+    } catch (error) {
+      return false;
+    }
+    transactions = next;
+    return true;
+  }
+
+  lendForm.addEventListener("submit", function (event) {
+    event.preventDefault();
+    if (!dataReady()) return;
+    const debtor = document.getElementById("receivable-debtor").value.trim();
+    const date = document.getElementById("receivable-date").value;
+    const amount = Number(document.getElementById("receivable-amount").value);
+    const accountId = document.getElementById("receivable-account").value;
+    const rate = Number(document.getElementById("receivable-rate").value);
+    const due = document.getElementById("receivable-due").value;
+    const note = document.getElementById("receivable-note").value.trim();
+    const account = accounts.find(function (a) { return a.id === accountId; });
+
+    if (
+      !debtor || debtor.length > 150 || !validTransactionDate(date) || !account ||
+      !Number.isSafeInteger(amount) || amount <= 0 ||
+      !Number.isFinite(rate) || rate < 0 || note.length > 300
+    ) {
+      lendMessage.textContent =
+        "Anh kiểm tra người vay, ngày, tài khoản, số tiền và lãi suất. Ghi chú tối đa 300 ký tự.";
+      return;
+    }
+    if (date < account.openingDate) {
+      lendMessage.textContent = "Ngày cho vay không được trước ngày bắt đầu tài khoản.";
+      return;
+    }
+    if (due !== "" && (!validTransactionDate(due) || due < date)) {
+      lendMessage.textContent = "Ngày hẹn thu hồi phải bằng hoặc sau ngày cho vay.";
+      return;
+    }
+
+    const before = accountBalances().find(function (b) { return b.account.id === accountId; });
+    const next = transactions.concat({
+      id: crypto.randomUUID(),
+      type: LEND,
+      date: date,
+      accountId: accountId,
+      amount: amount,
+      category: "Cho vay: " + debtor,
+      note: note,
+      debtor: debtor,
+      receivableRate: rate,
+      receivableDue: due
+    });
+    if (!saveTransactions(next)) {
+      lendMessage.textContent = "Không lưu được. Chưa ghi nhận khoản cho vay.";
+      return;
+    }
+    renderTransactions();
+    lendForm.reset();
+    document.getElementById("receivable-date").value = todayText();
+    lendMessage.textContent =
+      "Đã ghi nhận cho " + debtor + " vay " + money.format(amount) +
+      " từ " + account.name + ".";
+    if (before && before.balance - amount < 0) {
+      lendMessage.textContent +=
+        " Lưu ý: số dư " + account.name + " đang âm sau khoản này, anh kiểm tra lại.";
+    }
+  });
+
+  collectForm.addEventListener("submit", function (event) {
+    event.preventDefault();
+    if (!dataReady()) return;
+    const lendId = document.getElementById("collect-receivable").value;
+    const date = document.getElementById("collect-date").value;
+    const accountId = document.getElementById("collect-account").value;
+    const principal = Number(document.getElementById("collect-principal").value);
+    const interest = Number(document.getElementById("collect-interest").value);
+    const note = document.getElementById("collect-note").value.trim();
+    const lend = transactions.find(function (item) {
+      return item.id === lendId && item.type === LEND;
+    });
+    const account = accounts.find(function (a) { return a.id === accountId; });
+    const total = principal + interest;
+
+    if (
+      !lend || !account || !validTransactionDate(date) ||
+      !Number.isSafeInteger(principal) || principal < 0 ||
+      !Number.isSafeInteger(interest) || interest < 0 ||
+      !Number.isSafeInteger(total) || total <= 0 || note.length > 300
+    ) {
+      collectMessage.textContent =
+        "Anh kiểm tra khoản phải thu, tài khoản, ngày và số tiền. Gốc, lãi không âm; tổng thu phải lớn hơn 0.";
+      return;
+    }
+    if (date < lend.date || date < account.openingDate) {
+      collectMessage.textContent =
+        "Ngày thu không được trước ngày cho vay hoặc ngày bắt đầu tài khoản.";
+      return;
+    }
+    const remaining = lend.amount - collectedOf(lend.id).principal;
+    if (principal > remaining) {
+      collectMessage.textContent =
+        "Gốc thu vượt gốc còn phải thu: " + money.format(remaining);
+      return;
+    }
+    const next = transactions.concat({
+      id: crypto.randomUUID(),
+      type: COLLECT,
+      date: date,
+      accountId: accountId,
+      amount: total,
+      category: "Thu nợ: " + lend.debtor,
+      note: note,
+      debtor: lend.debtor,
+      receivableId: lend.id,
+      principal: principal,
+      interest: interest
+    });
+    if (!saveTransactions(next)) {
+      collectMessage.textContent = "Không lưu được. Chưa ghi nhận thu hồi nợ.";
+      return;
+    }
+    renderTransactions();
+    collectForm.reset();
+    document.getElementById("collect-date").value = todayText();
+    collectMessage.textContent =
+      "Đã thu gốc " + money.format(principal) + ", lãi " + money.format(interest) +
+      ". Tổng tiền thu: " + money.format(total) + ".";
+  });
+
+  function renderDebt(marketValue, assetDebt, cash, receivable, loanLeft) {
+    const body = document.getElementById("debt-total-body");
+    if (!body) return;
+    body.replaceChildren();
+    const totalDebt = assetDebt + loanLeft;
+    const totalAssets = marketValue + cash + receivable;
+    const box = document.createElement("div");
+    box.className = "rcv-box";
+    addLine(box, "Vay phát sinh còn nợ gốc: " + money.format(loanLeft));
+    addLine(box, "Dư nợ gắn với tài sản đầu tư: " + money.format(assetDebt));
+    const total = addLine(box, "Tổng nợ phải trả: " + money.format(totalDebt));
+    total.style.fontWeight = "bold";
+    total.style.fontSize = "1.1em";
+    addLine(box, "Tổng tài sản (thị trường + tiền + công nợ phải thu): " + money.format(totalAssets));
+    addLine(
+      box,
+      "Nợ so với tổng tài sản: " + (totalAssets > 0
+        ? new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 1 })
+            .format(totalDebt / totalAssets * 100) + "%"
+        : "chưa tính được")
+    );
+    body.append(box);
+  }
+
+  function renderNetWorth() {
+    const body = document.getElementById("net-worth-body");
+    if (!body) return;
+    body.replaceChildren();
+    if (!dataReady() || !storageReady) {
+      body.textContent = "Chưa thể tính do lỗi đọc dữ liệu.";
+      const debtBody = document.getElementById("debt-total-body");
+      if (debtBody) debtBody.textContent = "Chưa thể tính do lỗi đọc dữ liệu.";
+      return;
+    }
+    let marketValue = 0;
+    let assetDebt = 0;
+    assets.forEach(function (asset) {
+      marketValue += asset.value;
+      assetDebt += getAssetRemainingDebt(asset);
+    });
+    let cash = 0;
+    accountBalances().forEach(function (entry) { cash += entry.balance; });
+    let receivable = 0;
+    lends().forEach(function (item) {
+      receivable += item.amount - collectedOf(item.id).principal;
+    });
+    let borrowed = 0;
+    let loanPaid = 0;
+    transactions.forEach(function (item) {
+      if (item.type === "loan_receive") borrowed += item.amount;
+      if (item.type === "loan_repayment") loanPaid += item.principal;
+    });
+    const loanLeft = borrowed - loanPaid;
+    const net = marketValue - assetDebt + cash + receivable - loanLeft;
+
+    const box = document.createElement("div");
+    box.className = "rcv-box";
+    addLine(box, "Giá trị thị trường tài sản đầu tư: " + money.format(marketValue));
+    addLine(box, "Trừ dư nợ gắn với tài sản: " + money.format(assetDebt));
+    addLine(box, "Tiền trong các tài khoản: " + money.format(cash));
+    addLine(box, "Cộng công nợ phải thu còn lại: " + money.format(receivable));
+    addLine(box, "Trừ vay phát sinh còn nợ gốc: " + money.format(loanLeft));
+    const total = addLine(box, "Tài sản ròng: " + money.format(net));
+    total.style.fontWeight = "bold";
+    total.style.fontSize = "1.1em";
+    if (net < 0) total.style.color = "#b42318";
+    body.append(box);
+    renderDebt(marketValue, assetDebt, cash, receivable, loanLeft);
+  }
+
+  function refreshAll() {
+    renderReceivables();
+    renderNetWorth();
+  }
+
+  document.addEventListener("finance-transactions-changed", refreshAll);
+  document.addEventListener("finance-assets-or-accounts-updated", refreshAll);
+
+  window.financeHelpers = {
+    accountBalances: accountBalances,
+    lends: lends,
+    collectedOf: collectedOf,
+    daysBetween: daysBetween
+  };
+
+  document.getElementById("receivable-date").value = todayText();
+  document.getElementById("collect-date").value = todayText();
+  refreshAll();
+})();
+</script>
+<script>
+(function () {
+  const PLAN_KEY = "taiChinhCaNhan.plan.v1";
+  const nf = new Intl.NumberFormat("vi-VN");
+  const nfMillion = new Intl.NumberFormat("vi-VN", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1
+  });
+
+  function validMonth(value) {
+    return typeof value === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
+  }
+  function pad(n) { return String(n).padStart(2, "0"); }
+
+  let plan = [];
+  let planReady = true;
+  try {
+    const saved = localStorage.getItem(PLAN_KEY);
+    if (saved !== null) {
+      const data = JSON.parse(saved);
+      const ids = new Set();
+      if (
+        !Array.isArray(data) ||
+        !data.every(function (item) {
+          const ok = item && typeof item.id === "string" && item.id !== "" &&
+            !ids.has(item.id) && validMonth(item.month) &&
+            (item.kind === "in" || item.kind === "out") &&
+            typeof item.name === "string" && item.name.trim() !== "" &&
+            Number.isSafeInteger(item.amount) && item.amount > 0;
+          if (ok) ids.add(item.id);
+          return ok;
+        })
+      ) {
+        throw new Error("Dữ liệu kế hoạch không hợp lệ");
+      }
+      plan = data;
+    }
+  } catch (error) {
+    planReady = false;
+  }
+
+  window.financePlan = {
+    get: function () { return plan; },
+    get ready() { return planReady; }
+  };
+
+  const helpers = window.financeHelpers;
+  let year = new Date().getFullYear();
+
+  function ready() {
+    return transactionReady && accountStorageReady && storageReady &&
+      budgetReady && planReady;
+  }
+  function zeros() { return new Array(12).fill(0); }
+  function total(list) {
+    return list.reduce(function (a, b) { return a + b; }, 0);
+  }
+  function spread(amount) {
+    const sign = amount < 0 ? -1 : 1;
+    const abs = Math.abs(amount);
+    const base = Math.floor(abs / 12);
+    const rest = abs - base * 12;
+    const out = [];
+    for (let i = 0; i < 12; i++) out.push(sign * (base + (i < rest ? 1 : 0)));
+    return out;
+  }
+
+  function build(y) {
+    const ys = String(y);
+    const f = {
+      assetReturn: zeros(), collPrincipal: zeros(), collInterest: zeros(),
+      planIn: zeros(), living: zeros(), assetInterest: zeros(),
+      loanInterest: zeros(), loanPrincipal: zeros(), planOut: zeros(),
+      notes: {
+        noBudget: false, fallbackMonths: [],
+        recvSkipped: 0, recvSkippedAmount: 0,
+        loanSkipped: 0, loanSkippedAmount: 0
+      }
+    };
+
+    // Tiền sinh lời tài sản: tính trên giá vốn, chia đều 12 tháng
+    let returnTotal = 0;
+    assets.forEach(function (asset) {
+      returnTotal += asset.cost * (asset.expectedReturn ?? 0) / 100;
+    });
+    f.assetReturn = spread(Math.round(returnTotal));
+
+    // Công nợ phải thu dự kiến thu hồi theo hạn thu
+    helpers.lends().forEach(function (item) {
+      const got = helpers.collectedOf(item.id);
+      const remaining = item.amount - got.principal;
+      if (remaining <= 0) return;
+      const due = item.receivableDue;
+      if (!due || due.slice(0, 4) !== ys) {
+        f.notes.recvSkipped++;
+        f.notes.recvSkippedAmount += remaining;
+        return;
+      }
+      const index = Number(due.slice(5, 7)) - 1;
+      const days = helpers.daysBetween(item.date, due);
+      const expected = Math.max(
+        0,
+        Math.round(remaining * (item.receivableRate / 100) * days / 365) - got.interest
+      );
+      f.collPrincipal[index] += remaining;
+      f.collInterest[index] += expected;
+    });
+
+    // Kế hoạch thu chi do người dùng nhập
+    plan.forEach(function (item) {
+      if (item.month.slice(0, 4) !== ys) return;
+      const index = Number(item.month.slice(5, 7)) - 1;
+      if (item.kind === "in") f.planIn[index] += item.amount;
+      else f.planOut[index] += item.amount;
+    });
+
+    // Chi sinh hoạt dự kiến từ ngân sách tháng
+    const byMonth = {};
+    budgets.forEach(function (item) {
+      byMonth[item.month] = (byMonth[item.month] || 0) + item.limit;
+    });
+    const keys = Object.keys(byMonth).sort();
+    if (keys.length === 0) f.notes.noBudget = true;
+    for (let i = 0; i < 12; i++) {
+      const key = ys + "-" + pad(i + 1);
+      if (byMonth[key] !== undefined) {
+        f.living[i] = byMonth[key];
+      } else if (keys.length > 0) {
+        let source = null;
+        keys.forEach(function (k) { if (k < key) source = k; });
+        if (source === null) source = keys[0];
+        f.living[i] = byMonth[source];
+        f.notes.fallbackMonths.push(i + 1);
+      }
+    }
+
+    // Lãi vay gắn với tài sản
+    let assetMonthly = 0;
+    assets.forEach(function (asset) {
+      assetMonthly += getAssetRemainingDebt(asset) * ((asset.rate ?? 0) / 100) / 12;
+    });
+    f.assetInterest = zeros().map(function () { return Math.round(assetMonthly); });
+
+    // Vay phát sinh: lãi hằng tháng và gốc đến hạn
+    transactions.forEach(function (loan) {
+      if (loan.type !== "loan_receive") return;
+      let paid = 0;
+      transactions.forEach(function (item) {
+        if (item.type === "loan_repayment" && item.loanId === loan.id) {
+          paid += item.principal;
+        }
+      });
+      const remaining = loan.amount - paid;
+      if (remaining <= 0) return;
+      const loanYear = loan.date.slice(0, 4);
+      if (loanYear > ys) return;
+      const startMonth = loanYear === ys ? Number(loan.date.slice(5, 7)) : 1;
+      const monthlyInterest = Math.round(remaining * (loan.loanRate / 100) / 12);
+      const due = loan.loanDue;
+      const dueInYear = due && due.slice(0, 4) === ys;
+      const lastMonth = dueInYear ? Number(due.slice(5, 7)) : 12;
+      for (let i = startMonth - 1; i < lastMonth; i++) f.loanInterest[i] += monthlyInterest;
+      if (dueInYear) {
+        f.loanPrincipal[Math.max(lastMonth, startMonth) - 1] += remaining;
+      } else if (!due || due.slice(0, 4) < ys) {
+        f.notes.loanSkipped++;
+        f.notes.loanSkippedAmount += remaining;
+      }
+    });
+
+    return f;
+  }
+
+  function addLine(parent, text, className) {
+    const line = document.createElement("p");
+    line.textContent = text;
+    if (className) line.className = className;
+    parent.append(line);
+    return line;
+  }
+
+  function addBox(parent, heading, rows, totalLabel, totalValue) {
+    const box = document.createElement("div");
+    box.className = "rcv-box";
+    const title = document.createElement("strong");
+    title.textContent = heading;
+    box.append(title);
+    rows.forEach(function (row) {
+      addLine(box, row[0] + ": " + money.format(row[1]));
+    });
+    const line = addLine(box, totalLabel + ": " + money.format(totalValue));
+    line.style.fontWeight = "bold";
+    parent.append(box);
+  }
+
+  function renderForecast() {
+    const body = document.getElementById("forecast-body");
+    if (!body) return;
+    body.replaceChildren();
+    if (!ready()) {
+      body.textContent = "Chưa thể dự báo do lỗi đọc dữ liệu.";
+      return;
+    }
+
+    const f = build(year);
+    const inRows = [
+      ["Tiền sinh lời tài sản đầu tư (trên giá vốn)", total(f.assetReturn)],
+      ["Thu hồi công nợ phải thu — gốc", total(f.collPrincipal)],
+      ["Thu hồi công nợ phải thu — lãi", total(f.collInterest)],
+      ["Thu nhập dự kiến khác", total(f.planIn)]
+    ];
+    const needRows = [
+      ["Chi sinh hoạt (theo ngân sách tháng)", total(f.living)],
+      ["Lãi vay gắn với tài sản", total(f.assetInterest)],
+      ["Lãi vay phát sinh", total(f.loanInterest)],
+      ["Gốc vay phát sinh đến hạn", total(f.loanPrincipal)],
+      ["Chi lớn dự kiến", total(f.planOut)]
+    ];
+    const inTotal = inRows.reduce(function (a, r) { return a + r[1]; }, 0);
+    const needTotal = needRows.reduce(function (a, r) { return a + r[1]; }, 0);
+    const net = inTotal - needTotal;
+    let cash = 0;
+    helpers.accountBalances().forEach(function (entry) { cash += entry.balance; });
+
+    addBox(body, "Tổng dòng tiền vào trong năm " + year + " (dòng lưu kim)", inRows,
+      "Tổng dòng tiền vào", inTotal);
+    addBox(body, "Nhu cầu vốn trong năm " + year, needRows,
+      "Tổng nhu cầu vốn", needTotal);
+
+    const result = document.createElement("div");
+    result.className = "rcv-box";
+    const head = document.createElement("strong");
+    head.textContent = "Kết quả dự báo vốn năm " + year;
+    result.append(head);
+    const r1 = addLine(
+      result,
+      "Chỉ tính dòng tiền năm: " + (net >= 0 ? "THỪA " : "THIẾU ") +
+        money.format(Math.abs(net)),
+      net >= 0 ? "fc-good" : "fc-bad"
+    );
+    r1.style.fontSize = "1.1em";
+    const withCash = net + cash;
+    addLine(result, "Tiền đang có trong các tài khoản: " + money.format(cash));
+    addLine(
+      result,
+      "Sau khi tính cả tiền đang có: " + (withCash >= 0 ? "THỪA " : "THIẾU ") +
+        money.format(Math.abs(withCash)),
+      withCash >= 0 ? "fc-good" : "fc-bad"
+    );
+
+    // Bảng theo tháng
+    const scroll = document.createElement("div");
+    scroll.className = "fc-scroll";
+    const table = document.createElement("table");
+    table.className = "fc-table";
+    const thead = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    ["Tháng", "Vào", "Cần", "Chênh lệch", "Lũy kế + tiền"].forEach(function (label) {
+      const th = document.createElement("th");
+      th.textContent = label;
+      headRow.append(th);
+    });
+    thead.append(headRow);
+    table.append(thead);
+    const tbody = document.createElement("tbody");
+    let running = cash;
+    let firstShort = null;
+    let sumIn = 0, sumNeed = 0;
+    for (let i = 0; i < 12; i++) {
+      const monthIn = f.assetReturn[i] + f.collPrincipal[i] + f.collInterest[i] + f.planIn[i];
+      const monthNeed = f.living[i] + f.assetInterest[i] + f.loanInterest[i] +
+        f.loanPrincipal[i] + f.planOut[i];
+      const diff = monthIn - monthNeed;
+      running += diff;
+      sumIn += monthIn;
+      sumNeed += monthNeed;
+      if (running < 0 && firstShort === null) firstShort = i + 1;
+      const tr = document.createElement("tr");
+      if (running < 0) tr.className = "fc-short";
+      [
+        "T" + (i + 1),
+        nfMillion.format(monthIn / 1e6),
+        nfMillion.format(monthNeed / 1e6),
+        nfMillion.format(diff / 1e6),
+        nfMillion.format(running / 1e6)
+      ].forEach(function (text) {
+        const td = document.createElement("td");
+        td.textContent = text;
+        tr.append(td);
+      });
+      tbody.append(tr);
+    }
+    const totalRow = document.createElement("tr");
+    totalRow.className = "fc-total";
+    [
+      "Cả năm",
+      nfMillion.format(sumIn / 1e6),
+      nfMillion.format(sumNeed / 1e6),
+      nfMillion.format((sumIn - sumNeed) / 1e6),
+      ""
+    ].forEach(function (text) {
+      const td = document.createElement("td");
+      td.textContent = text;
+      totalRow.append(td);
+    });
+    tbody.append(totalRow);
+    table.append(tbody);
+    scroll.append(table);
+
+    addLine(
+      result,
+      firstShort === null
+        ? "Không có tháng nào thiếu vốn (đã tính tiền đang có)."
+        : "Tháng đầu tiên thiếu vốn (đã tính tiền đang có): tháng " + firstShort + ".",
+      firstShort === null ? "fc-good" : "fc-bad"
+    );
+    body.append(result);
+
+    const tableTitle = document.createElement("p");
+    tableTitle.className = "rcv-hint";
+    tableTitle.textContent =
+      "Bảng theo tháng (đơn vị: triệu ₫). Dòng nền đỏ là tháng lũy kế đã tính tiền đang có bị âm.";
+    body.append(tableTitle);
+    body.append(scroll);
+
+    // Ghi chú cách tính
+    const notes = [
+      "Tiền sinh lời tài sản tính trên giá vốn và chia đều 12 tháng."
+    ];
+    if (f.notes.noBudget) {
+      notes.push("Chưa có ngân sách chi tiêu tháng nào nên chi sinh hoạt đang là 0. Hãy nhập ngân sách ở tab Thu chi.");
+    } else if (f.notes.fallbackMonths.length > 0) {
+      notes.push(
+        f.notes.fallbackMonths.length + " tháng chưa có ngân sách nên dùng mức của tháng gần nhất có ngân sách."
+      );
+    }
+    if (f.notes.recvSkipped > 0) {
+      notes.push(
+        "Công nợ phải thu chưa có hạn thu hoặc hạn ngoài năm " + year + ": " +
+        f.notes.recvSkipped + " khoản, gốc còn " + money.format(f.notes.recvSkippedAmount) +
+        " — chưa tính vào dòng tiền."
+      );
+    }
+    if (f.notes.loanSkipped > 0) {
+      notes.push(
+        "Vay phát sinh chưa có hạn trả hoặc đã quá hạn từ trước: " + f.notes.loanSkipped +
+        " khoản, gốc còn " + money.format(f.notes.loanSkippedAmount) +
+        " — chưa tính gốc vào nhu cầu vốn."
+      );
+    }
+    notes.push("Nợ gắn với tài sản không có lịch trả gốc riêng. Nếu có kế hoạch trả gốc, hãy thêm ở mục Kế hoạch thu chi.");
+    notes.push("Lãi công nợ phải thu dự kiến tính lãi đơn từ ngày cho vay đến hạn thu, trừ lãi đã thu.");
+    notes.forEach(function (text) { addLine(body, "• " + text, "rcv-hint"); });
+  }
+
+  // ---------- Kế hoạch thu chi ----------
+  const planForm = document.getElementById("plan-form");
+  const planMessage = document.createElement("p");
+  planMessage.setAttribute("role", "status");
+  planForm.after(planMessage);
+
+  function savePlan(next) {
+    try {
+      localStorage.setItem(PLAN_KEY, JSON.stringify(next));
+    } catch (error) {
+      return false;
+    }
+    plan = next;
+    return true;
+  }
+
+  function monthLabel(month) {
+    return month.slice(5, 7) + "/" + month.slice(0, 4);
+  }
+
+  function renderPlan() {
+    const list = document.getElementById("plan-list");
+    if (!list) return;
+    list.replaceChildren();
+    planForm.querySelector("button[type=submit]").disabled = !planReady;
+    if (!planReady) {
+      list.textContent = "Chưa thể hiển thị kế hoạch do lỗi đọc dữ liệu.";
+      return;
+    }
+    const ys = String(year);
+    const items = plan.filter(function (item) { return item.month.slice(0, 4) === ys; })
+      .sort(function (a, b) {
+        return a.month.localeCompare(b.month) || a.kind.localeCompare(b.kind);
+      });
+    let inSum = 0, outSum = 0;
+    items.forEach(function (item) {
+      if (item.kind === "in") inSum += item.amount; else outSum += item.amount;
+    });
+    if (items.length === 0) {
+      addLine(list, "Chưa có kế hoạch nào trong năm " + year + ".");
+      return;
+    }
+    const box = document.createElement("div");
+    box.className = "rcv-box";
+    addLine(box, "Tổng thu nhập dự kiến năm " + year + ": " + money.format(inSum));
+    addLine(box, "Tổng chi lớn dự kiến năm " + year + ": " + money.format(outSum));
+    list.append(box);
+
+    items.forEach(function (item) {
+      const row = document.createElement("div");
+      row.className = "plan-row";
+      const text = document.createElement("div");
+      text.textContent =
+        monthLabel(item.month) + " — " +
+        (item.kind === "in" ? "Thu nhập" : "Chi lớn") + " — " +
+        item.name + " — " + money.format(item.amount);
+      row.append(text);
+
+      const one = document.createElement("button");
+      one.type = "button";
+      one.textContent = "Xóa mục này";
+      one.addEventListener("click", function () {
+        if (!window.confirm("Xóa khoản kế hoạch: " + item.name + " (" + monthLabel(item.month) + ")?")) return;
+        if (!savePlan(plan.filter(function (x) { return x.id !== item.id; }))) {
+          planMessage.textContent = "Không lưu được. Chưa xóa.";
+          return;
+        }
+        renderAll();
+      });
+      row.append(one);
+
+      if (item.series) {
+        const count = plan.filter(function (x) { return x.series === item.series; }).length;
+        if (count > 1) {
+          const all = document.createElement("button");
+          all.type = "button";
+          all.textContent = "Xóa cả chuỗi (" + count + " tháng)";
+          all.addEventListener("click", function () {
+            if (!window.confirm("Xóa cả chuỗi \"" + item.name + "\" (" + count + " tháng)?")) return;
+            if (!savePlan(plan.filter(function (x) { return x.series !== item.series; }))) {
+              planMessage.textContent = "Không lưu được. Chưa xóa.";
+              return;
+            }
+            renderAll();
+          });
+          row.append(all);
+        }
+      }
+      list.append(row);
+    });
+  }
+
+  planForm.addEventListener("submit", function (event) {
+    event.preventDefault();
+    if (!planReady) return;
+    const kind = document.getElementById("plan-kind").value;
+    const name = document.getElementById("plan-name").value.trim();
+    const month = document.getElementById("plan-month").value;
+    const amount = Number(document.getElementById("plan-amount").value);
+    const until = document.getElementById("plan-until").value;
+
+    if (
+      (kind !== "in" && kind !== "out") || !name || name.length > 150 ||
+      !validMonth(month) || !Number.isSafeInteger(amount) || amount <= 0
+    ) {
+      planMessage.textContent = "Anh kiểm tra loại, nội dung, tháng và số tiền (số nguyên lớn hơn 0).";
+      return;
+    }
+    if (until !== "" && (!validMonth(until) || until < month)) {
+      planMessage.textContent = "Tháng kết thúc lặp phải bằng hoặc sau tháng phát sinh.";
+      return;
+    }
+
+    const months = [];
+    let y = Number(month.slice(0, 4));
+    let m = Number(month.slice(5, 7));
+    const last = until === "" ? month : until;
+    while ((y + "-" + pad(m)) <= last) {
+      months.push(y + "-" + pad(m));
+      m++;
+      if (m > 12) { m = 1; y++; }
+      if (months.length > 60) break;
+    }
+    if (months.length > 60) {
+      planMessage.textContent = "Chỉ lặp tối đa 60 tháng một lần.";
+      return;
+    }
+    const series = months.length > 1 ? crypto.randomUUID() : undefined;
+    const created = months.map(function (value) {
+      const item = {
+        id: crypto.randomUUID(), month: value, kind: kind, name: name, amount: amount
+      };
+      if (series) item.series = series;
+      return item;
+    });
+    if (!savePlan(plan.concat(created))) {
+      planMessage.textContent = "Không lưu được. Chưa ghi nhận kế hoạch.";
+      return;
+    }
+    planForm.reset();
+    document.getElementById("plan-month").value = new Date().getFullYear() + "-" + pad(new Date().getMonth() + 1);
+    planMessage.textContent = "Đã lưu " + created.length + " khoản kế hoạch.";
+    year = Number(month.slice(0, 4));
+    renderAll();
+  });
+
+  // ---------- Năm đang xem ----------
+  const yearInputs = [
+    document.getElementById("forecast-year"),
+    document.getElementById("plan-year")
+  ];
+  yearInputs.forEach(function (input) {
+    input.value = year;
+    input.addEventListener("change", function () {
+      const value = Number(input.value);
+      if (Number.isInteger(value) && value >= 2000 && value <= 2100) {
+        year = value;
+      }
+      renderAll();
+    });
+  });
+
+  function renderAll() {
+    yearInputs.forEach(function (input) { input.value = year; });
+    renderForecast();
+    renderPlan();
+  }
+
+  document.addEventListener("finance-transactions-changed", renderAll);
+  document.addEventListener("finance-assets-or-accounts-updated", renderAll);
+  document.addEventListener("finance-tab-shown", renderAll);
+
+  const now = new Date();
+  document.getElementById("plan-month").value = now.getFullYear() + "-" + pad(now.getMonth() + 1);
+  renderAll();
+})();
+</script>
+<script>
+(function () {
   const TABS = [
     { id: "home",   label: "Tổng quan", icon: "🏠" },
     { id: "assets", label: "Tài sản",   icon: "📈" },
     { id: "money",  label: "Thu chi",   icon: "💳" },
-    { id: "loans",  label: "Vay",       icon: "🤝" }
+    { id: "loans",  label: "Vay",       icon: "🤝" },
+    { id: "receivables", label: "Phải thu", icon: "📥" },
+    { id: "balance", label: "Cân đối", icon: "📊" }
   ];
   const KEY = "taiChinhCaNhan.ui.v1";
   const main = document.querySelector("main");
@@ -4720,6 +6025,8 @@ updateHistoryAccountOptions();document.getElementById("history-type")
       });
       subnav.appendChild(b);
     });
+
+    document.dispatchEvent(new Event("finance-tab-shown"));
   }
 
   function go(tab, sub) {
@@ -4735,7 +6042,8 @@ updateHistoryAccountOptions();document.getElementById("history-type")
     ["assets", null],
     ["money", null],
     ["loans", null],
-    ["money", "Báo cáo"]
+    ["receivables", null],
+    ["balance", "Cân đối tháng"]
   ];
   Array.prototype.forEach.call(main.querySelectorAll(".grid > .card"), function (card, i) {
     if (!targets[i]) return;

@@ -1,6 +1,6 @@
 // Service worker: ưu tiên lấy bản mới từ mạng, mất mạng thì dùng bản đã lưu.
 // Khi sửa app, đổi số phiên bản bên dưới (v1 -> v2...) để điện thoại tải bản mới.
-const CACHE = "tai-chinh-v3";
+const CACHE = "tai-chinh-v5";
 const FILES = [
   "./",
   "./index.html",
